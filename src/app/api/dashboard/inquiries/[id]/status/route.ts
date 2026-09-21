@@ -1,18 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dataStore } from "@/lib/data-store";
+import { getOperatorSession } from "@/lib/auth";
+
+const ALLOWED_INQUIRY_STATUSES = ["new", "contacted", "quoted", "closed"] as const;
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const isAuthed = await getOperatorSession();
+  if (!isAuthed) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized: Operator session required." },
+      { status: 401 }
+    );
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
     const { status } = body;
 
-    if (!status) {
+    if (!status || !ALLOWED_INQUIRY_STATUSES.includes(status)) {
       return NextResponse.json(
-        { success: false, error: "Status is required." },
+        {
+          success: false,
+          error: `Invalid status. Must be one of: ${ALLOWED_INQUIRY_STATUSES.join(", ")}`,
+        },
         { status: 400 }
       );
     }

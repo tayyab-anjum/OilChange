@@ -294,24 +294,26 @@ export const dataStore = {
 
   async getAllVisits() {
     try {
-      const visits = await db.select().from(serviceVisits).orderBy(desc(serviceVisits.createdAt));
-      const allVenues = await db.select().from(venues);
+      const visits = await db.select().from(serviceVisits).orderBy(desc(serviceVisits.createdAt)).limit(100);
+      const allVenues = await db.select().from(venues).limit(500);
+      const venueMap = new Map(allVenues.map((ven) => [ven.id, ven]));
       return visits.map((v) => ({
         ...v,
-        venue: allVenues.find((ven) => ven.id === v.venueId) || null,
+        venue: venueMap.get(v.venueId) || null,
       }));
     } catch {
       const store = globalStore.__fryerCareStore!;
+      const venueMap = new Map(store.venues.map((ven) => [ven.id, ven]));
       return store.serviceVisits.map((v) => ({
         ...v,
-        venue: store.venues.find((ven) => ven.id === v.venueId) || null,
+        venue: venueMap.get(v.venueId) || null,
       }));
     }
   },
 
   async getAllInquiries() {
     try {
-      return await db.select().from(inquiries).orderBy(desc(inquiries.createdAt));
+      return await db.select().from(inquiries).orderBy(desc(inquiries.createdAt)).limit(100);
     } catch {
       return globalStore.__fryerCareStore!.inquiries;
     }
@@ -319,22 +321,29 @@ export const dataStore = {
 
   async getAllSubscriptions() {
     try {
-      const subs = await db.select().from(subscriptions).orderBy(desc(subscriptions.createdAt));
-      const allVenues = await db.select().from(venues);
+      const subs = await db.select().from(subscriptions).orderBy(desc(subscriptions.createdAt)).limit(100);
+      const allVenues = await db.select().from(venues).limit(500);
+      const venueMap = new Map(allVenues.map((ven) => [ven.id, ven]));
       return subs.map((s) => ({
         ...s,
-        venue: allVenues.find((ven) => ven.id === s.venueId) || null,
+        venue: venueMap.get(s.venueId) || null,
       }));
     } catch {
       const store = globalStore.__fryerCareStore!;
+      const venueMap = new Map(store.venues.map((ven) => [ven.id, ven]));
       return store.subscriptions.map((s) => ({
         ...s,
-        venue: store.venues.find((ven) => ven.id === s.venueId) || null,
+        venue: venueMap.get(s.venueId) || null,
       }));
     }
   },
 
   async updateVisitStatus(visitId: string, status: string, notes?: string) {
+    const validStatuses = ["scheduled", "en_route", "in_progress", "completed", "cancelled"];
+    if (!validStatuses.includes(status)) {
+      throw new Error(`Invalid visit status: ${status}`);
+    }
+
     try {
       await db
         .update(serviceVisits)
@@ -345,12 +354,17 @@ export const dataStore = {
       const v = store.serviceVisits.find((vis) => vis.id === visitId);
       if (v) {
         v.status = status;
-        if (notes) v.technicianNotes = notes;
+        if (notes !== undefined) v.technicianNotes = notes;
       }
     }
   },
 
   async updateInquiryStatus(inquiryId: string, status: string) {
+    const validStatuses = ["new", "contacted", "quoted", "closed"];
+    if (!validStatuses.includes(status)) {
+      throw new Error(`Invalid inquiry status: ${status}`);
+    }
+
     try {
       await db.update(inquiries).set({ status }).where(eq(inquiries.id, inquiryId));
     } catch {

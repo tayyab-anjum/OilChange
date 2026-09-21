@@ -5,10 +5,25 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Flame, Lock, Mail, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, KeyRound } from "lucide-react";
 
+function getSafeRedirect(raw: string | null): string {
+  if (!raw) return "/dashboard";
+  // Accept only normalized application-relative paths beginning with one slash
+  if (
+    raw.startsWith("/") &&
+    !raw.startsWith("//") &&
+    !raw.startsWith("/\\") &&
+    !raw.includes("://") &&
+    !raw.toLowerCase().includes("javascript:")
+  ) {
+    return raw;
+  }
+  return "/dashboard";
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/dashboard";
+  const redirectPath = getSafeRedirect(searchParams.get("redirect"));
 
   const [email, setEmail] = useState("operator@fryercare.com");
   const [password, setPassword] = useState("FryerCareMaster2026!");

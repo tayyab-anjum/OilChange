@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { dataStore } from "@/lib/data-store";
+import { getOperatorSession } from "@/lib/auth";
 
 export async function GET() {
+  const isAuthed = await getOperatorSession();
+  if (!isAuthed) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized: Operator session required." },
+      { status: 401 }
+    );
+  }
+
   try {
     const [visits, inquiries, subscriptions] = await Promise.all([
       dataStore.getAllVisits(),
