@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, numeric, jsonb, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, numeric, jsonb, uuid, varchar, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // 1. Venues / Restaurant Customers Table
@@ -28,7 +28,9 @@ export const subscriptions = pgTable("subscriptions", {
   startDate: timestamp("start_date", { withTimezone: true }).defaultNow().notNull(),
   nextServiceDate: timestamp("next_service_date", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("subscriptions_venue_id_idx").on(table.venueId),
+]);
 
 // 3. Service Visits & Bookings Table
 export const serviceVisits = pgTable("service_visits", {
@@ -48,7 +50,10 @@ export const serviceVisits = pgTable("service_visits", {
   technicianNotes: text("technician_notes"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("service_visits_venue_id_idx").on(table.venueId),
+  index("service_visits_subscription_id_idx").on(table.subscriptionId),
+]);
 
 // 4. Inquiries & Leads Table
 export const inquiries = pgTable("inquiries", {
@@ -63,7 +68,9 @@ export const inquiries = pgTable("inquiries", {
   message: text("message").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("new"), // new, contacted, quoted, closed
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index("inquiries_venue_id_idx").on(table.venueId),
+]);
 
 // 5. Operator User (Authentication) Table
 export const operatorUsers = pgTable("operator_users", {
