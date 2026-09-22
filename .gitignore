@@ -38,3 +38,6 @@ Thumbs.db
 # typescript
 *.tsbuildinfo
 
+# local architecture docs / notes
+explain.md
+dev.cpp
